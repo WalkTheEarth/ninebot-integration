@@ -4,6 +4,9 @@
     "bluetooth": [
         {
             "manufacturer_id": 16974
+        },
+        {
+            "manufacturer_id": 17230
         }
     ],
     "codeowners": [
@@ -19,7 +22,7 @@
         "ninebot_ble"
     ],
     "requirements": [
-        "ninebot-ble==0.1.0"
+        "ninebot-ble==0.1.1"
     ],
-    "version": "0.1.0"
+    "version": "0.1.1"
 }
