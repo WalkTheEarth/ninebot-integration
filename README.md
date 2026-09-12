@@ -24,13 +24,14 @@ whole update, so partial data from unusual models is still reported.
 
 ## Requirements note
 
-The integration requires the `ninebot-ble` Python package (version pinned in the
-[manifest](custom_components/ninebot_scooter/manifest.json)). That package is **not published to
-PyPI yet**, so Home Assistant cannot install it by itself. Install it manually into Home
-Assistant's Python environment first:
+The integration requires the `ninebot-bleNG` Python package (version pinned in the
+[manifest](custom_components/ninebot_scooter/manifest.json); the importable module is
+`ninebot_ble`). It is published on PyPI via this repository's GitHub Actions tag workflow
+([PyPI trusted publishing](https://docs.pypi.org/trusted-publishers/)). Install it manually into
+Home Assistant's Python environment first:
 
 ```
-pip install git+https://github.com/WalkTheEarth/ninebot-ble
+pip install ninebot-bleNG
 ```
 
 (For a Home Assistant Container/Core install, run this inside the container/venv Home Assistant
@@ -97,7 +98,7 @@ logger:
   advertising when idle), keep it in range, and make sure no other app is holding the BLE
   connection.
 - **Setup fails with a requirements error** — see the requirements note above: install
-  `ninebot-ble` into Home Assistant's Python environment manually.
+  `ninebot-bleNG` into Home Assistant's Python environment manually.
 - **Stuck waiting for pairing** — press the scooter's power button once when prompted; the client
   waits up to 60 seconds.
 - **Bluetooth proxies** — the integration *connects* to the scooter (not just listening), so a
