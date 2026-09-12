@@ -1,0 +1,5 @@
+{
+    "name": "Ninebot Scooter",
+    "render_readme": true,
+    "homeassistant": "2023.2.0"
+}

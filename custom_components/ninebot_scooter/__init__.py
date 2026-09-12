@@ -66,9 +66,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
+async def _async_disconnect_on_unload(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Disconnect the scooter when the config entry is unloaded or removed."""
+    data: NinebotBleSensor | None = hass.data.get(DOMAIN, {}).get(entry.entry_id, None)
+    if data is None:
+        return
+    try:
+        await data.disconnect()
+    except Exception:  # noqa: BLE001 - best effort cleanup
+        _LOGGER.debug("Failed to disconnect scooter on unload", exc_info=True)
+
+
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-        hass.data[DOMAIN].pop(entry.entry_id)
+        await _async_disconnect_on_unload(hass, entry)
+        hass.data[DOMAIN].pop(entry.entry_id, None)
 
     return unload_ok

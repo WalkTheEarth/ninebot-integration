@@ -1,6 +1,8 @@
 """Support for sensors."""
 from __future__ import annotations
 
+from typing import Any
+
 from ninebot_ble import SensorUpdate
 
 from homeassistant import config_entries
@@ -14,6 +16,7 @@ from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorEntityDescription,
+    SensorStateClass,
 )
 
 from homeassistant.core import HomeAssistant
@@ -23,25 +26,55 @@ from homeassistant.helpers.sensor import sensor_device_info_to_hass_device_info
 from .const import DOMAIN
 from .device import device_key_to_bluetooth_entity_key
 
+# Device classes that map cleanly onto HA's MEASUREMENT state class, enabling
+# long-term statistics for those entities.
+_MEASUREMENT_DEVICE_CLASSES = {
+    SensorDeviceClass.BATTERY,
+    SensorDeviceClass.CURRENT,
+    SensorDeviceClass.POWER,
+    SensorDeviceClass.SPEED,
+    SensorDeviceClass.TEMPERATURE,
+    SensorDeviceClass.VOLTAGE,
+}
+
+
+def _safe_device_class(device_class: Any) -> SensorDeviceClass | None:
+    """Convert a sensor_state_data device class to a HA one, if known.
+
+    Newer ninebot-ble releases may know device classes this HA version does
+    not; degrade to a unit-less sensor instead of crashing setup.
+    """
+    if device_class is None:
+        return None
+    try:
+        return SensorDeviceClass(device_class)
+    except ValueError:
+        return None
+
 
 def sensor_update_to_bluetooth_data_update(
     sensor_update: SensorUpdate,
 ) -> PassiveBluetoothDataUpdate:
     """Convert a sensor update to a bluetooth data update."""
 
+    entity_descriptions = {}
+    for device_key, desc in sensor_update.entity_descriptions.items():
+        device_class = _safe_device_class(desc.device_class)
+        entity_descriptions[device_key_to_bluetooth_entity_key(device_key)] = SensorEntityDescription(
+            key=str(device_key),
+            device_class=device_class,
+            native_unit_of_measurement=desc.native_unit_of_measurement,
+            state_class=SensorStateClass.MEASUREMENT
+            if device_class in _MEASUREMENT_DEVICE_CLASSES
+            else None,
+        )
+
     return PassiveBluetoothDataUpdate(
         devices={
             device_id: sensor_device_info_to_hass_device_info(device_info)
             for device_id, device_info in sensor_update.devices.items()
         },
-        entity_descriptions={
-            device_key_to_bluetooth_entity_key(device_key): SensorEntityDescription(
-                key=str(device_key),
-                device_class=SensorDeviceClass(desc.device_class) if desc.device_class is not None else None,
-                native_unit_of_measurement=desc.native_unit_of_measurement,
-            )
-            for device_key, desc in sensor_update.entity_descriptions.items()
-        },
+        entity_descriptions=entity_descriptions,
         entity_data={
             device_key_to_bluetooth_entity_key(device_key): sensor_values.native_value
             for device_key, sensor_values in sensor_update.entity_values.items()
